@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Campaign {
+  id                 String   @id @default(cuid())
+  brand              String
+  objective          String
+  targetCountry      String
+  targetGender       String
+  targetAgeRange     String
+  niches             String[]
+  preferredHookTypes String[]
+  minAvgWatchTime    Float
+  minFollowers       Int
+  maxFollowers       Int
+  tone               String
+  doNotUseWords      String[]
+  
+  briefCache         BriefCache[]
+
+  @@map("campaigns")
+}
+
+model Creator {
+  id               String   @id @default(cuid())
+  username         String   @unique
+  country          String
+  niches           String[]
+  followers        Int
+  engagementRate   Float
+  avgWatchTime     Float
+  contentStyle     String
+  primaryHookType  String
+  brandSafetyFlags String[]
+  
+  // Audience stats flattened for MVP
+  topCountries     String[]
+  femaleSplit      Float
+  maleSplit        Float
+  topAgeRange      String
+
+  briefCache       BriefCache[]
+
+  @@map("creators")
+}
+
+model BriefCache {
+  id           String   @id @default(cuid())
+  campaignId   String
+  creatorId    String
+  briefContent String   @db.Text
+  createdAt    DateTime @default(now())
+
+  campaign     Campaign @relation(fields: [campaignId], references: [id])
+  creator      Creator  @relation(fields: [creatorId], references: [id])
+
+  @@unique([campaignId, creatorId]) // Ensure max 1 active brief per pairing
+  @@map("brief_caches")
+}
